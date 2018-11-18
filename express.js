@@ -48,6 +48,16 @@ app.intent('Default Welcome Intent - yes', (conv) => {
   conv.ask(new Suggestions('Fecha de nacimiento', 'DNI'))
 })
 
+app.intent('Default Welcome Intent - no', (conv) => {
+  conv.ask('En ese caso, necesito darle de alta. Voy a necesitar que me proporcione una serie de datos, como su nombre y apellidos, fecha de nacimiento, DNI y dirección')
+  conv.ask(new Suggestions('Nombre y apellidos', 'Fecha de nacimiento', 'DNI', 'Número de teléfono'))
+})
+
+app.intent('newUser', conv => {
+  conv.ask('Nuevo usuario añadido, ya puede acceder al resto de funciones del sistema')
+  showBasicSuggestions(conv)
+})
+
 app.intent('help', (conv) => {
   conv.ask('Puedes pedirme cosas como:\n Ver mis citas o Pedir una cita')
   showBasicSuggestions(conv)
@@ -69,42 +79,51 @@ app.intent('id_verify', (conv) => {
 })
 
 app.intent('showCitas', (conv) => {
-  if (!conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) {
-    conv.ask('Esta acción requiere una pantalla de visualización.')
-    return
-  }
-
   const userId = extractUserFromContext(conv)
   const citas = API.getCitas(userId)
 
   if (citas && citas.length > 0) {
     conv.ask('Aquí tienes tus próximas citas:')
-    const items = []
-    for (let cita of citas) {
-      items.push(new BrowseCarouselItem({
-        'title': cita.specialty,
-        'description': cita.doctor,
-        'footer': cita.date,
-        'url': googleUrl
-      }))
+    if (!conv.surface.capabilities.has('actions.capability.SCREEN_OUTPUT')) {
+      let message = ''
+      for (let cita of citas) {
+        message = message + `El ${cita.date} tiene cita de ${cita.specialty} con ${cita.doctor}\n`
+      }
+      conv.ask(message)
+    } else {
+      const items = []
+      for (let cita of citas) {
+        items.push(new BrowseCarouselItem({
+          'title': cita.specialty,
+          'description': cita.doctor,
+          'footer': cita.date,
+          'url': googleUrl
+        }))
+      }
+      conv.ask(new BrowseCarousel({ 'items': items }))
     }
-
-    conv.ask(new BrowseCarousel({ 'items': items }))
   } else {
     conv.ask('No tienes ninguna cita programada.')
     conv.ask('Puedo ayudarte en algo más?')
-    showBasicSuggestions(conv)
   }
+  showBasicSuggestions(conv)
 })
 
 app.intent('pedirCita', (conv) => {
   const date = Date.parse(conv.parameters.appointment_date)
   const time = Date.parse(conv.parameters.appointment_time)
+  let specialty = conv.parameters.appointment_specialty
+
+  if (specialty) {
+    specialty = specialty.toLowerCase()
+    specialty = specialty[0].toUpperCase() + specialty.substr(1)
+  }
+
   const dateStr = dateFormat(date, "dddd, d 'de' mmmm 'de' yyyy")
   const timeStr = dateFormat(time, 'HH:MM')
 
   API.addNewCita({
-    specialty: 'Especialidad', doctor: 'Dra. García', date: `${dateStr} a las ${timeStr}`
+    specialty: specialty, doctor: 'Dra. García', date: `${dateStr} a las ${timeStr}`
   }, extractUserFromContext(conv))
 
   conv.ask('Su cita ha sido añadida.')

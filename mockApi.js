@@ -13,12 +13,12 @@ const citas = {
     {
       specialty: 'Traumatología',
       doctor: 'Dr. Martinez',
-      date: '16.15, jueves 23 de abril de 2019'
+      date: 'jueves, 23 de abril de 2019 a las 16:15'
     },
     {
       specialty: 'Oncología',
       doctor: 'Dra. Fernández',
-      date: '16:40, viernes 30 de julio de 2019'
+      date: 'viernes, 30 de julio de 2019 a las 16:40'
     }
   ]
 }
